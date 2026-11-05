@@ -3,6 +3,10 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+kotlin {
+    jvmToolchain(17)
+}
+
 android {
     namespace = "pk.cinejoy.app"
     compileSdk = 35
