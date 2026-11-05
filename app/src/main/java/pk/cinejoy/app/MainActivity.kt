@@ -117,9 +117,14 @@ class MainActivity : Activity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                pageLoaded = true
-                splashOverlay.visibility = View.GONE
-                pageProgress.visibility = View.GONE
+                // Wait until WebView has actually drawn the first page frame.
+                // Hiding the splash at onPageFinished alone can expose the site's
+                // temporary dark-green background before its first content paint.
+                view.postVisualStateCallback(0L) {
+                    pageLoaded = true
+                    splashOverlay.visibility = View.GONE
+                    pageProgress.visibility = View.GONE
+                }
             }
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
@@ -135,7 +140,7 @@ class MainActivity : Activity() {
                 if (!pageLoaded) splashProgress.progress = newProgress
                 pageProgress.progress = newProgress
                 pageProgress.visibility = if (pageLoaded && newProgress < 100) View.VISIBLE else View.GONE
-                if (newProgress >= 100 && pageLoaded) splashOverlay.visibility = View.GONE
+                // The splash is dismissed only by postVisualStateCallback above.
             }
 
             override fun onShowCustomView(view: View, callback: CustomViewCallback) {
