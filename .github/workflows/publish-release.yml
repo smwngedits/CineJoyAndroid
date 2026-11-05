@@ -1,0 +1,82 @@
+name: Publish CineJoy 1.0.0 Release
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/publish-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release metadata
+        uses: actions/checkout@v4
+
+      - name: Download verified Android APK artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p release-assets/android release-assets/ios
+          gh run download 42018913812 \
+            --repo "${{ github.repository }}" \
+            --name CineJoy-debug-apk \
+            --dir release-assets/android
+          APK_PATH="$(find release-assets/android -type f -name '*.apk' -print -quit)"
+          test -n "$APK_PATH"
+          cp "$APK_PATH" release-assets/CineJoy.v1.0.apk
+
+      - name: Download verified iOS SideStore IPA artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 42020262701 \
+            --repo "${{ github.repository }}" \
+            --name CineJoy-iOS-SideStore-IPA \
+            --dir release-assets/ios
+          IPA_PATH="$(find release-assets/ios -type f -name '*.ipa' -print -quit)"
+          test -n "$IPA_PATH"
+          cp "$IPA_PATH" release-assets/CineJoy-iOS-SideStore.ipa
+
+      - name: Publish both platform builds
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: CineJoy 1.0.0
+          target_commitish: main
+          draft: false
+          prerelease: false
+          make_latest: true
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          body: |
+            # CineJoy 1.0.0
+
+            Your CineJoy experience, now available on Android and iPhone.
+
+            ## Android
+            - Install the APK on your Android phone.
+            - Open CineJoy and browse **https://cinejoy.pk/**.
+            - Includes the CineJoy branded launcher icon, black loading screen, and fullscreen video support.
+
+            ## iOS (iPhone)
+            - Native SwiftUI app powered by Apple's WKWebView.
+            - Designed for iOS 15 and later.
+            - Includes the CineJoy logo, black splash screen with a white loading indicator, website loading detection, fullscreen/landscape video support, and swipe navigation.
+            - The IPA is unsigned for personal sideloading. Import it into **SideStore** and sign/install it with your Apple ID.
+            - With a free Apple developer account, SideStore installations generally need periodic refreshing; keep SideStore configured and refresh before the signing period expires.
+
+            ## Downloads
+            - **Android:** `CineJoy.v1.0.apk`
+            - **iPhone / SideStore:** `CineJoy-iOS-SideStore.ipa`
+
+            Version: 1.0.0
+            Release channel: Stable
+          files: |
+            release-assets/CineJoy.v1.0.apk
+            release-assets/CineJoy-iOS-SideStore.ipa
