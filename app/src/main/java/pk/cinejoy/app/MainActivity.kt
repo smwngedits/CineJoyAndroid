@@ -7,6 +7,8 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -34,6 +36,8 @@ class MainActivity : Activity() {
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var originalOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     private var pageLoaded = false
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var contentCheckAttempts = 0
 
     private val blockedHosts = setOf(
         "doubleclick.net", "googlesyndication.com", "googleadservices.com",
@@ -117,16 +121,11 @@ class MainActivity : Activity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                // Wait until WebView has actually drawn the first page frame.
-                // Hiding the splash at onPageFinished alone can expose the site's
-                // temporary dark-green background before its first content paint.
-                view.postVisualStateCallback(0L, object : WebView.VisualStateCallback() {
-                    override fun onComplete(requestId: Long) {
-                        pageLoaded = true
-                        splashOverlay.visibility = View.GONE
-                        pageProgress.visibility = View.GONE
-                    }
-                })
+                // A first WebView frame can still be the site's blank dark-green
+                // loading canvas. Keep our black branded splash until real page
+                // text/layout is present, with a timeout so the app never hangs.
+                contentCheckAttempts = 0
+                waitForSiteContent()
             }
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
@@ -164,6 +163,26 @@ class MainActivity : Activity() {
             webView.restoreState(savedInstanceState)
             splashOverlay.visibility = View.GONE
             pageLoaded = true
+        }
+    }
+
+    private fun waitForSiteContent() {
+        if (isFinishing || isDestroyed || pageLoaded) return
+        contentCheckAttempts++
+        webView.evaluateJavascript(
+            "(function(){var b=document.body;if(!b)return false;" +
+            "var t=(b.innerText||b.textContent||'').replace(/\\s+/g,' ').trim();" +
+            "var h=Math.max(b.scrollHeight,document.documentElement.scrollHeight);" +
+            "return document.readyState==='complete' && t.length>35 && h>120;})()"
+        ) { result ->
+            val contentReady = result == "true"
+            if (contentReady || contentCheckAttempts >= 50) {
+                pageLoaded = true
+                splashOverlay.visibility = View.GONE
+                pageProgress.visibility = View.GONE
+            } else {
+                mainHandler.postDelayed({ waitForSiteContent() }, 350L)
+            }
         }
     }
 
