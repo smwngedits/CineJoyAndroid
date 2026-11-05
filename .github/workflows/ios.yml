@@ -1,0 +1,61 @@
+name: Build CineJoy iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Prepare CineJoy logo assets
+        run: |
+          mkdir -p ios/CineJoy/Assets.xcassets/CineJoyLogo.imageset
+          mkdir -p ios/CineJoy/Assets.xcassets/CineJoyIcon.appiconset
+          cp app/src/main/res/drawable-nodpi/cinejoy_icon.png ios/CineJoy/Assets.xcassets/CineJoyLogo.imageset/cinejoy_icon.png
+          cp app/src/main/res/drawable-nodpi/cinejoy_icon.png ios/CineJoy/Assets.xcassets/CineJoyIcon.appiconset/AppIcon.png
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build unsigned iOS app
+        working-directory: ios
+        run: |
+          xcodebuild -project CineJoy.xcodeproj \
+            -scheme CineJoy \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package IPA for SideStore
+        working-directory: ios
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/CineJoy.app"
+          test -d "$APP_PATH"
+          mkdir -p ipa/Payload
+          cp -R "$APP_PATH" ipa/Payload/CineJoy.app
+          cd ipa
+          zip -qry ../CineJoy-SideStore.ipa Payload
+
+      - name: Upload iOS IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: CineJoy-iOS-SideStore-IPA
+          path: ios/CineJoy-SideStore.ipa
+          if-no-files-found: error
