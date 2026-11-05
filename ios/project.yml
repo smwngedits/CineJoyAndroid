@@ -1,0 +1,24 @@
+name: CineJoy
+options:
+  bundleIdPrefix: pk.cinejoy
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  CineJoy:
+    type: application
+    platform: iOS
+    sources:
+      - path: CineJoy
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: pk.cinejoy.ios
+        PRODUCT_NAME: CineJoy
+        INFOPLIST_FILE: CineJoy/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: CineJoyIcon
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
