@@ -120,11 +120,13 @@ class MainActivity : Activity() {
                 // Wait until WebView has actually drawn the first page frame.
                 // Hiding the splash at onPageFinished alone can expose the site's
                 // temporary dark-green background before its first content paint.
-                view.postVisualStateCallback(0L) {
-                    pageLoaded = true
-                    splashOverlay.visibility = View.GONE
-                    pageProgress.visibility = View.GONE
-                }
+                view.postVisualStateCallback(0L, object : WebView.VisualStateCallback() {
+                    override fun onComplete(requestId: Long) {
+                        pageLoaded = true
+                        splashOverlay.visibility = View.GONE
+                        pageProgress.visibility = View.GONE
+                    }
+                })
             }
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
