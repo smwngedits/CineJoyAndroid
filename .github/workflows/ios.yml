@@ -26,7 +26,7 @@ jobs:
           mkdir -p ios/CineJoy/Assets.xcassets/CineJoyLogo.imageset
           mkdir -p ios/CineJoy/Assets.xcassets/CineJoyIcon.appiconset
           cp app/src/main/res/drawable-nodpi/cinejoy_icon.png ios/CineJoy/Assets.xcassets/CineJoyLogo.imageset/cinejoy_icon.png
-          cp app/src/main/res/drawable-nodpi/cinejoy_icon.png ios/CineJoy/Assets.xcassets/CineJoyIcon.appiconset/AppIcon.png
+          sips -z 1024 1024 app/src/main/res/drawable-nodpi/cinejoy_icon.png --out ios/CineJoy/Assets.xcassets/CineJoyIcon.appiconset/AppIcon.png >/dev/null
 
       - name: Generate Xcode project
         working-directory: ios
